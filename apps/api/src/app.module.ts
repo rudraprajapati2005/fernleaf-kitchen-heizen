@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { HealthModule } from './modules/health/health.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { validateEnvironment } from './config/environment';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { validateEnvironment } from './config/environment';
       envFilePath: ['.env.local', '.env'],
       validate: validateEnvironment,
     }),
+    AuthModule,
     PrismaModule,
     HealthModule,
   ],

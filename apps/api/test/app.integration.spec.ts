@@ -5,11 +5,6 @@ import { AppModule } from '../src/app.module';
 import { ApiExceptionFilter } from '../src/common/filters/api-exception.filter';
 import { PrismaService } from '../src/modules/prisma/prisma.service';
 
-process.env.NODE_ENV = 'test';
-process.env.PORT = '4000';
-process.env.DATABASE_URL = 'postgresql://user:password@localhost:5432/kitchen?schema=public';
-process.env.WEB_ORIGIN = 'http://localhost:3000';
-
 describe('API infrastructure', () => {
   let app: INestApplication;
   const queryRaw = jest.fn().mockResolvedValue([{ '?column?': 1 }]);
@@ -36,7 +31,9 @@ describe('API infrastructure', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
   });
 
   it('starts the application', () => {
@@ -73,7 +70,7 @@ describe('API infrastructure', () => {
     const response = await request(app.getHttpServer()).get('/api/health').expect(503);
 
     expect(response.body.error).toMatchObject({
-      code: 'REQUEST_ERROR',
+      code: 'SERVICE_UNAVAILABLE',
       message: 'Database connectivity check failed',
     });
   });

@@ -1,14 +1,19 @@
+'use client';
+
+import { useAuth } from '../features/auth/auth-provider';
+import { LoginForm } from '../features/auth/login-form';
+import { AppShell } from '../features/shell/app-shell';
+
 export default function HomePage() {
-  return (
-    <main className="shell">
-      <section className="card">
-        <p className="eyebrow">Fearleaf Kitchen</p>
-        <h1>Operations dashboard foundation</h1>
-        <p className="muted">
-          The admin panel is ready for kitchen operations modules. Business features will be added
-          here.
-        </p>
-      </section>
-    </main>
-  );
+  const { status } = useAuth();
+
+  if (status === 'loading') {
+    return <main className="auth-state">Loading your workspace...</main>;
+  }
+
+  if (status === 'unauthenticated') {
+    return <LoginForm />;
+  }
+
+  return <AppShell />;
 }

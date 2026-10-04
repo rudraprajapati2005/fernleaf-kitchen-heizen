@@ -1,6 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
+import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import { RequestLoggingMiddleware } from './common/middleware/request-logging.middleware';
@@ -14,7 +15,9 @@ export async function createApp(): Promise<INestApplication> {
     origin: config.getOrThrow<string>('WEB_ORIGIN'),
   });
   const requestLoggingMiddleware = new RequestLoggingMiddleware();
-  app.use((request, response, next) => requestLoggingMiddleware.use(request, response, next));
+  app.use((request: Request, response: Response, next: NextFunction) =>
+    requestLoggingMiddleware.use(request, response, next),
+  );
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

@@ -5,6 +5,8 @@ export interface Environment {
   PORT: number;
   DATABASE_URL: string;
   WEB_ORIGIN: string;
+  JWT_SECRET: string;
+  JWT_EXPIRES_IN: string;
 }
 
 function requiredString(config: Record<string, unknown>, key: string): string {
@@ -43,10 +45,19 @@ export function validateEnvironment(config: Record<string, unknown>): Environmen
     throw new Error('WEB_ORIGIN must be a valid URL');
   }
 
+  const jwtSecret = requiredString(config, 'JWT_SECRET');
+  if (jwtSecret.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters');
+  }
+
+  const jwtExpiresIn = requiredString(config, 'JWT_EXPIRES_IN');
+
   return {
     NODE_ENV: nodeEnv,
     PORT: port,
     DATABASE_URL: databaseUrl,
     WEB_ORIGIN: webOrigin,
+    JWT_SECRET: jwtSecret,
+    JWT_EXPIRES_IN: jwtExpiresIn,
   };
 }

@@ -37,7 +37,12 @@ export class ApiExceptionFilter implements ExceptionFilter {
         : exception instanceof Error
           ? exception.message
           : 'Internal server error';
-    const code = statusCode >= 500 ? 'INTERNAL_SERVER_ERROR' : 'REQUEST_ERROR';
+    const code =
+      statusCode === HttpStatus.SERVICE_UNAVAILABLE
+        ? 'SERVICE_UNAVAILABLE'
+        : statusCode >= 500
+          ? 'INTERNAL_SERVER_ERROR'
+          : 'REQUEST_ERROR';
 
     const body: ApiErrorResponse = {
       statusCode,
