@@ -1,4 +1,10 @@
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+
+if (!configuredApiUrl && process.env.NODE_ENV === 'production') {
+  throw new Error('NEXT_PUBLIC_API_URL must be configured for production deployments');
+}
+
+const apiUrl = (configuredApiUrl ?? 'http://localhost:4000/api').replace(/\/$/, '');
 
 export class ApiError extends Error {
   constructor(

@@ -39,10 +39,19 @@ export function validateEnvironment(config: Record<string, unknown>): Environmen
   }
 
   const webOrigin = requiredString(config, 'WEB_ORIGIN');
-  try {
-    new URL(webOrigin);
-  } catch {
-    throw new Error('WEB_ORIGIN must be a valid URL');
+  const webOrigins = webOrigin.split(',').map((origin) => origin.trim()).filter(Boolean);
+  if (webOrigins.length === 0) {
+    throw new Error('WEB_ORIGIN must contain at least one URL');
+  }
+  for (const origin of webOrigins) {
+    try {
+      const parsedOrigin = new URL(origin);
+      if (!parsedOrigin.origin || parsedOrigin.pathname !== '/' || parsedOrigin.search || parsedOrigin.hash) {
+        throw new Error('invalid origin format');
+      }
+    } catch {
+      throw new Error('WEB_ORIGIN must contain valid origin URLs separated by commas');
+    }
   }
 
   const jwtSecret = requiredString(config, 'JWT_SECRET');

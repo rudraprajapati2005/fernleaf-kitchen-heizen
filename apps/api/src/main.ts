@@ -11,8 +11,13 @@ export async function createApp(): Promise<INestApplication> {
   const config = app.get(ConfigService);
 
   app.setGlobalPrefix('api');
+  const allowedOrigins = config
+    .getOrThrow<string>('WEB_ORIGIN')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
   app.enableCors({
-    origin: config.getOrThrow<string>('WEB_ORIGIN'),
+    origin: allowedOrigins,
     credentials: true,
   });
   const requestLoggingMiddleware = new RequestLoggingMiddleware();
