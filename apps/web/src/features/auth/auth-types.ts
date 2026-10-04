@@ -5,4 +5,5 @@ export interface AuthUser {
   email: string;
   name: string;
   role: StaffRole;
+  capabilities?: readonly string[];
 }

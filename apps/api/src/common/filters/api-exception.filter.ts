@@ -1,10 +1,4 @@
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
 interface ApiErrorResponse {
@@ -25,10 +19,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const request = context.getRequest<Request>();
     const response = context.getResponse<Response>();
     const statusCode =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
-    const exceptionResponse = exception instanceof HttpException ? exception.getResponse() : undefined;
+      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+    const exceptionResponse =
+      exception instanceof HttpException ? exception.getResponse() : undefined;
     const message =
       typeof exceptionResponse === 'object' &&
       exceptionResponse !== null &&
@@ -38,11 +31,15 @@ export class ApiExceptionFilter implements ExceptionFilter {
           ? exception.message
           : 'Internal server error';
     const code =
-      statusCode === HttpStatus.SERVICE_UNAVAILABLE
-        ? 'SERVICE_UNAVAILABLE'
-        : statusCode >= 500
-          ? 'INTERNAL_SERVER_ERROR'
-          : 'REQUEST_ERROR';
+      statusCode === HttpStatus.FORBIDDEN
+        ? 'FORBIDDEN'
+        : statusCode === HttpStatus.UNAUTHORIZED
+          ? 'UNAUTHORIZED'
+          : statusCode === HttpStatus.SERVICE_UNAVAILABLE
+            ? 'SERVICE_UNAVAILABLE'
+            : statusCode >= 500
+              ? 'INTERNAL_SERVER_ERROR'
+              : 'REQUEST_ERROR';
 
     const body: ApiErrorResponse = {
       statusCode,

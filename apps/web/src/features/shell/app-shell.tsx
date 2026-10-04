@@ -1,9 +1,10 @@
 'use client';
 
 import { useAuth } from '../auth/auth-provider';
+import { CapabilityGate } from '../auth/capability-gate';
 
 export function AppShell() {
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   return (
     <main className="dashboard">
       <aside className="sidebar">
@@ -12,8 +13,8 @@ export function AppShell() {
         <nav>
           <span className="nav-active">Overview</span>
           <span>Orders</span>
-          <span>Menu</span>
-          <span>Team</span>
+          {can('catalogue.read') && <span>Menu</span>}
+          {can('staff.manage') && <span>Team</span>}
         </nav>
       </aside>
       <section className="dashboard-content">
@@ -26,11 +27,13 @@ export function AppShell() {
             Sign out
           </button>
         </header>
-        <section className="welcome-card">
-          <p className="eyebrow">Operations dashboard</p>
-          <h2>Your kitchen, in sync.</h2>
-          <p className="muted">Your workspace is ready for the next service.</p>
-        </section>
+        <CapabilityGate capability="order.read">
+          <section className="welcome-card">
+            <p className="eyebrow">Operations dashboard</p>
+            <h2>Your kitchen, in sync.</h2>
+            <p className="muted">Your workspace is ready for the next service.</p>
+          </section>
+        </CapabilityGate>
       </section>
     </main>
   );

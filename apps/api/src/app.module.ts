@@ -4,6 +4,7 @@ import { HealthModule } from './modules/health/health.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { validateEnvironment } from './config/environment';
 import { AuthModule } from './modules/auth/auth.module';
+import { AuthorizationModule } from './modules/authorization/authorization.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AuthModule } from './modules/auth/auth.module';
       validate: validateEnvironment,
     }),
     AuthModule,
+    AuthorizationModule,
     PrismaModule,
     HealthModule,
   ],

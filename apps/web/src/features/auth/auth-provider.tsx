@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { apiRequest, ApiError } from '../../lib/api-client';
 import type { AuthUser } from './auth-types';
+import { hasCapability, type Capability } from './capabilities';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 interface AuthContextValue {
@@ -11,6 +12,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   error: string | null;
+  can: (capability: Capability) => boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -21,6 +23,12 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const handleExpiredSession = () => {
+      setUser(null);
+      setStatus('unauthenticated');
+      setError('Your session has expired. Please sign in again.');
+    };
+    window.addEventListener('auth:expired', handleExpiredSession);
     void apiRequest<{ user: AuthUser }>('/auth/me')
       .then(({ user: currentUser }) => {
         setUser(currentUser);
@@ -30,6 +38,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         setUser(null);
         setStatus('unauthenticated');
       });
+    return () => window.removeEventListener('auth:expired', handleExpiredSession);
   }, []);
 
   const value = useMemo<AuthContextValue>(
@@ -37,6 +46,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       user,
       status,
       error,
+      can: (capability) => (user ? hasCapability(user.role, capability) : false),
       async login(email, password) {
         setError(null);
         try {

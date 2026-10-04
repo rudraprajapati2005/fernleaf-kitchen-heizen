@@ -22,6 +22,9 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
     | { error?: { message?: string | string[] } }
     | null;
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('auth:expired'));
+    }
     const message = body?.error?.message ?? 'Request failed';
     throw new ApiError(Array.isArray(message) ? message[0] ?? 'Request failed' : message, response.status);
   }

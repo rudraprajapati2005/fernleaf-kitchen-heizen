@@ -36,11 +36,21 @@ export function LoginForm() {
         <form className="login-form" onSubmit={handleSubmit}>
           <label>
             Work email
-            <input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+            <input
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
           </label>
           <label>
             Password
-            <input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} />
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
           </label>
           {(validationError ?? error) && <p className="form-error">{validationError ?? error}</p>}
           <button type="submit" disabled={isSubmitting}>
