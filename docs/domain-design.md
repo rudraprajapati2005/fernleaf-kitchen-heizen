@@ -3,6 +3,13 @@
 This document defines the first persistence boundary for the internal commercial-kitchen
 admin panel. It intentionally describes the domain before database models are introduced.
 
+## Company delivery address selection
+
+Employees may choose their own delivery address only from the active delivery
+addresses configured for their company. Employees cannot provide arbitrary
+addresses at order time. Orders store a delivery-address snapshot so later
+company address edits do not rewrite historical orders.
+
 ## Entity list
 
 ### User

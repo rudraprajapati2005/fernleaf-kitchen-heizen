@@ -5,6 +5,8 @@ import { CapabilityGate } from '../auth/capability-gate';
 import { StaffManagement } from '../admin/staff-management';
 import { ReferenceDataManagement } from '../admin/reference-data-management';
 import { CatalogueManagement } from '../catalogue/catalogue-management';
+import { MenuCategoryManagement } from '../catalogue/menu-category-management';
+import { CompanyManagement } from '../companies/company-management';
 
 export function AppShell() {
   const { user, logout, can } = useAuth();
@@ -40,6 +42,8 @@ export function AppShell() {
         <StaffManagement />
         <ReferenceDataManagement />
         <CatalogueManagement />
+        <MenuCategoryManagement />
+        <CompanyManagement />
       </section>
     </main>
   );

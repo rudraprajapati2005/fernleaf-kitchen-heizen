@@ -8,6 +8,8 @@ import { AuthorizationModule } from './modules/authorization/authorization.modul
 import { StaffModule } from './modules/staff/staff.module';
 import { ReferenceDataModule } from './modules/reference-data/reference-data.module';
 import { CatalogueModule } from './modules/catalogue/catalogue.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { CompaniesModule } from './modules/companies/companies.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { CatalogueModule } from './modules/catalogue/catalogue.module';
     StaffModule,
     ReferenceDataModule,
     CatalogueModule,
+    CategoriesModule,
+    CompaniesModule,
     PrismaModule,
     HealthModule,
   ],
