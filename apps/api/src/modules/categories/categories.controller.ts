@@ -9,7 +9,7 @@ import { CategoriesService } from './categories.service';
 export class CategoriesController {
   constructor(private readonly categories: CategoriesService) {}
   @Get() @RequireCapabilities('catalogue.read') list() { return this.categories.list(); }
-  @Post() @RequireCapabilities('catalogue.manage') create(@Body() body: { name: string; displayOrder: number }) { return this.categories.create(body); }
+  @Post() @RequireCapabilities('catalogue.manage') create(@Body() body: { name: string; displayOrder?: number }) { return this.categories.create(body); }
   @Patch(':id') @RequireCapabilities('catalogue.manage') update(@Param('id') id: string, @Body() body: { name?: string; displayOrder?: number; isActive?: boolean; secret?: boolean }) { return this.categories.update(id, body); }
   @Patch('order') @RequireCapabilities('catalogue.manage') reorder(@Body() body: { ids: string[] }) { return this.categories.reorder(body.ids); }
   @Post(':id/dishes') @RequireCapabilities('catalogue.manage') addDish(@Param('id') id: string, @Body() body: { dishId: string; displayOrder: number }) { return this.categories.addDish(id, body); }

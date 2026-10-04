@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { apiRequest, ApiError } from '../../lib/api-client';
 import { useAuth } from '../auth/auth-provider';
+import { EditDialog } from '../../components/ui';
 
 type Ref = { id: string; name: string };
 type Company = { id: string; name: string };
@@ -83,18 +84,16 @@ export function EmployeeManagement() {
         {can('employee.manage') && <button onClick={() => setSelected(employee)}>Edit profile</button>}
       </div>)}
     </div>
-    {selected && can('employee.manage') && <div className="management-card">
-      <h3>Edit {selected.name}</h3>
-      <div className="inline-form"><input value={selected.name} onChange={(event) => setSelected({ ...selected, name: event.target.value })} /><input value={selected.email ?? ''} placeholder="Email" onChange={(event) => setSelected({ ...selected, email: event.target.value })} /><select value={selected.companyId} onChange={(event) => setSelected({ ...selected, companyId: event.target.value })}>{companies.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}</select></div>
+    {selected && can('employee.manage') && <EditDialog title={`Edit ${selected.name}`} description="Choose what to change, then save or cancel your edits." onCancel={() => setSelected(null)} onSave={() => void save()} saveLabel="Save employee">
+      <div className="dialog-form"><label>Name<input value={selected.name} onChange={(event) => setSelected({ ...selected, name: event.target.value })} /></label><label>Email<input value={selected.email ?? ''} placeholder="Email" onChange={(event) => setSelected({ ...selected, email: event.target.value })} /></label><label>Company<select value={selected.companyId} onChange={(event) => setSelected({ ...selected, companyId: event.target.value })}>{companies.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}</select></label></div>
       <p>Ordering permissions</p>
       {([
         ['canChooseOwnDeliveryAddress', 'Choose own delivery address'],
         ['canChangeDeliveryTime', 'Change delivery time'],
         ['canChangePackaging', 'Change packaging'],
       ] as const).map(([key, label]) => <label key={key}><input type="checkbox" checked={selected[key]} onChange={(event) => setSelected({ ...selected, [key]: event.target.checked })} /> {label}</label>)}
-      <p>Allergies</p><div className="inline-form">{allergens.map((ref) => <label key={ref.id}><input type="checkbox" checked={selected.allergies.some((item) => item.id === ref.id)} onChange={() => toggleRef('allergies', ref)} /> {ref.name}</label>)}</div>
-      <p>Dietary preferences</p><div className="inline-form">{dietaryTags.map((ref) => <label key={ref.id}><input type="checkbox" checked={selected.dietaryPreferences.some((item) => item.id === ref.id)} onChange={() => toggleRef('dietaryPreferences', ref)} /> {ref.name}</label>)}</div>
-      <button onClick={() => void save()}>Save employee</button>
-    </div>}
+      <p>Allergies</p><div className="dialog-options">{allergens.map((ref) => <label key={ref.id}><input type="checkbox" checked={selected.allergies.some((item) => item.id === ref.id)} onChange={() => toggleRef('allergies', ref)} /> {ref.name}</label>)}</div>
+      <p>Dietary preferences</p><div className="dialog-options">{dietaryTags.map((ref) => <label key={ref.id}><input type="checkbox" checked={selected.dietaryPreferences.some((item) => item.id === ref.id)} onChange={() => toggleRef('dietaryPreferences', ref)} /> {ref.name}</label>)}</div>
+    </EditDialog>}
   </section>;
 }

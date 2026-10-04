@@ -5,7 +5,12 @@ import { PrismaService } from '../prisma/prisma.service';
 export class CategoriesService {
   constructor(private readonly prisma: PrismaService) {}
   list() { return this.prisma.menuCategory.findMany({ orderBy: { displayOrder: 'asc' }, include: { dishes: { orderBy: { displayOrder: 'asc' }, include: { dish: true } } } }); }
-  create(body: { name: string; displayOrder: number }) { return this.prisma.menuCategory.create({ data: { name: body.name.trim(), displayOrder: body.displayOrder } }); }
+  async create(body: { name: string; displayOrder?: number }) {
+    const name = body.name.trim();
+    if (!name) throw new BadRequestException('Category name is required');
+    const last = await this.prisma.menuCategory.findFirst({ orderBy: { displayOrder: 'desc' }, select: { displayOrder: true } });
+    return this.prisma.menuCategory.create({ data: { name, displayOrder: (last?.displayOrder ?? -1) + 1 } });
+  }
   update(id: string, body: { name?: string; displayOrder?: number; isActive?: boolean; secret?: boolean }) { return this.prisma.menuCategory.update({ where: { id }, data: { ...(body.name === undefined ? {} : { name: body.name.trim() }), ...(body.displayOrder === undefined ? {} : { displayOrder: body.displayOrder }), ...(body.isActive === undefined ? {} : { isActive: body.isActive }), ...(body.secret === undefined ? {} : { secret: body.secret }) } }); }
   async addDish(categoryId: string, body: { dishId: string; displayOrder: number }) {
     const category = await this.prisma.menuCategory.findUnique({ where: { id: categoryId } });

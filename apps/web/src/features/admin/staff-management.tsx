@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { apiRequest, ApiError } from '../../lib/api-client';
 import { useAuth } from '../auth/auth-provider';
 import type { StaffRole } from '../auth/auth-types';
+import { EditDialog } from '../../components/ui';
 
 interface StaffMember {
   id: string;
@@ -61,8 +62,7 @@ export function StaffManagement() {
     }
   }
 
-  async function updateStaff(event: FormEvent) {
-    event.preventDefault();
+  async function updateStaff() {
     if (!editing) return;
     try {
       await apiRequest(`/staff/${editing.id}`, {
@@ -160,33 +160,18 @@ export function StaffManagement() {
       {error && <p className="form-error">{error}</p>}
       {message && <p className="form-success">{message}</p>}
       {editing && (
-        <form className="inline-form edit-form" onSubmit={updateStaff}>
-          <input
-            required
-            value={editing.name}
-            onChange={(event) => setEditing({ ...editing, name: event.target.value })}
-          />
-          <input
-            required
-            type="email"
-            value={editing.email}
-            onChange={(event) => setEditing({ ...editing, email: event.target.value })}
-          />
-          <select
-            value={editing.role}
-            onChange={(event) => setEditing({ ...editing, role: event.target.value as StaffRole })}
-          >
-            {roles.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-          <button type="submit">Save changes</button>
-          <button type="button" onClick={() => setEditing(null)}>
-            Cancel
-          </button>
-        </form>
+        <EditDialog
+          title={`Edit ${editing.name}`}
+          description="Review the account details before saving them."
+          onCancel={() => setEditing(null)}
+          onSave={() => void updateStaff()}
+        >
+          <div className="dialog-form">
+            <label>Name<input required value={editing.name} onChange={(event) => setEditing({ ...editing, name: event.target.value })} /></label>
+            <label>Email<input required type="email" value={editing.email} onChange={(event) => setEditing({ ...editing, email: event.target.value })} /></label>
+            <label>Role<select value={editing.role} onChange={(event) => setEditing({ ...editing, role: event.target.value as StaffRole })}>{roles.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+          </div>
+        </EditDialog>
       )}
       <div className="data-list">
         {staff.map((member) => (
