@@ -7,6 +7,10 @@ import { ReferenceDataManagement } from '../admin/reference-data-management';
 import { CatalogueManagement } from '../catalogue/catalogue-management';
 import { MenuCategoryManagement } from '../catalogue/menu-category-management';
 import { CompanyManagement } from '../companies/company-management';
+import { EmployeeManagement } from '../companies/employee-management';
+import { PricingManagement } from '../pricing/pricing-management';
+import { CompanyCalendar } from '../companies/company-calendar';
+import { MenuPreview } from '../menu/menu-preview';
 
 export function AppShell() {
   const { user, logout, can } = useAuth();
@@ -44,6 +48,10 @@ export function AppShell() {
         <CatalogueManagement />
         <MenuCategoryManagement />
         <CompanyManagement />
+        <EmployeeManagement />
+        <PricingManagement />
+        <CompanyCalendar />
+        <MenuPreview />
       </section>
     </main>
   );

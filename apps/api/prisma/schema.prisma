@@ -2,9 +2,82 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum PriceDerivationType {
+  COST_MULTIPLIER
+  TIER_PERCENTAGE
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model PriceTier {
+  id             String               @id @default(cuid())
+  name           String               @unique
+  isDefault      Boolean              @default(false)
+  isActive       Boolean              @default(true)
+  derivationType PriceDerivationType?
+  costMultiplier Decimal?             @db.Decimal(12, 6)
+  sourceTierId   String?
+  percentage     Decimal?             @db.Decimal(12, 6)
+  sourceTier     PriceTier?           @relation("TierDerivation", fields: [sourceTierId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  derivedTiers   PriceTier[]          @relation("TierDerivation")
+  companies      Company[]
+  dishPrices     DishPrice[]
+  optionPrices   OptionPrice[]
+
+  @@index([isDefault, isActive])
+}
+
+model DishPrice {
+  id     String    @id @default(cuid())
+  dishId String
+  tierId String
+  price  Decimal   @db.Decimal(12, 2)
+  dish   Dish      @relation(fields: [dishId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tier   PriceTier @relation(fields: [tierId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([dishId, tierId])
+}
+
+model OptionPrice {
+  id       String    @id @default(cuid())
+  optionId String
+  tierId   String
+  price    Decimal   @db.Decimal(12, 2)
+  option   Option    @relation(fields: [optionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tier     PriceTier @relation(fields: [tierId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([optionId, tierId])
+}
+
+model CompanyHiddenCategory {
+  companyId  String
+  categoryId String
+  company    Company      @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  category   MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([companyId, categoryId])
+}
+
+model CompanyHiddenDish {
+  companyId String
+  dishId    String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  dish      Dish    @relation(fields: [dishId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([companyId, dishId])
+}
+
+model CompanyHoliday {
+  id        String   @id @default(cuid())
+  companyId String
+  date      DateTime @db.Date
+  label     String?
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([companyId, date])
 }
 
 enum UserRole {
@@ -42,25 +115,27 @@ model User {
 }
 
 model Allergen {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String     @id @default(cuid())
+  name      String     @unique
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   dishes    Dish[]
   options   Option[]
+  employees Employee[] @relation("EmployeeAllergies")
 
   @@index([isActive, name])
 }
 
 model DietaryTag {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String     @id @default(cuid())
+  name      String     @unique
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   dishes    Dish[]
   options   Option[]
+  employees Employee[] @relation("EmployeeDietaryPreferences")
 
   @@index([isActive, name])
 }
@@ -92,60 +167,75 @@ model Company {
   emailDomains        CompanyEmailDomain[]
   deliveryAddresses   CompanyDeliveryAddress[]
   orders              Order[]
+  priceTierId         String?
+  priceTier           PriceTier?               @relation(fields: [priceTierId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  workingDays         Json                     @default("[1,2,3,4,5]")
+  holidays            CompanyHoliday[]
+  hiddenCategories    CompanyHiddenCategory[]
+  hiddenDishes        CompanyHiddenDish[]
 
   @@index([isActive])
 }
 
 model Employee {
-  id             String    @id @default(cuid())
-  companyId      String
-  name           String
-  email          String?
-  phone          String?
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  company        Company   @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  ownedCompanies Company[] @relation("CompanyOwner")
-  orders         Order[]
+  id                          String       @id @default(cuid())
+  companyId                   String
+  name                        String
+  email                       String?
+  phone                       String?
+  canChooseOwnDeliveryAddress Boolean      @default(false)
+  canChangeDeliveryTime       Boolean      @default(false)
+  canChangePackaging          Boolean      @default(false)
+  isActive                    Boolean      @default(true)
+  createdAt                   DateTime     @default(now())
+  updatedAt                   DateTime     @updatedAt
+  company                     Company      @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  ownedCompanies              Company[]    @relation("CompanyOwner")
+  orders                      Order[]
+  allergies                   Allergen[]   @relation("EmployeeAllergies")
+  dietaryPreferences          DietaryTag[] @relation("EmployeeDietaryPreferences")
 
   @@index([companyId, isActive])
   @@index([email])
 }
 
 model Dish {
-  id                   String             @id @default(cuid())
+  id                   String              @id @default(cuid())
   name                 String
   description          String?
   image                String?
-  sku                  String             @unique
+  sku                  String              @unique
   temperature          DishTemperature
-  costPrice            Decimal            @map("price") @db.Decimal(12, 2)
+  costPrice            Decimal             @map("price") @db.Decimal(12, 2)
   minimumOrderQuantity Int?
-  isActive             Boolean            @default(true)
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  isActive             Boolean             @default(true)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
   orderLines           OrderLine[]
   options              Option[]
   allergens            Allergen[]
   dietaryTags          DietaryTag[]
-  kitchenStation       KitchenStation?    @relation(fields: [kitchenStationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  kitchenStation       KitchenStation?     @relation(fields: [kitchenStationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   kitchenStationId     String?
   optionGroups         OptionGroup[]
   categoryMemberships  MenuCategoryDish[]
+  prices               DishPrice[]
+  hiddenForCompanies   CompanyHiddenDish[]
 
   @@index([isActive, name])
   @@index([temperature, isActive])
 }
 
 model MenuCategory {
-  id           String             @id @default(cuid())
-  name         String
-  displayOrder Int
-  isActive     Boolean            @default(true)
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
-  dishes       MenuCategoryDish[]
+  id                 String                  @id @default(cuid())
+  name               String
+  displayOrder       Int
+  isActive           Boolean                 @default(true)
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  dishes             MenuCategoryDish[]
+  secret             Boolean                 @default(false)
+  hiddenForCompanies CompanyHiddenCategory[]
 
   @@unique([displayOrder])
   @@index([isActive, displayOrder])
@@ -204,6 +294,7 @@ model Option {
   allergens   Allergen[]
   dietaryTags DietaryTag[]
   groupLinks  OptionGroupOption[]
+  prices      OptionPrice[]
 
   @@index([isActive, name])
 }

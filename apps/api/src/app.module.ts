@@ -10,6 +10,10 @@ import { ReferenceDataModule } from './modules/reference-data/reference-data.mod
 import { CatalogueModule } from './modules/catalogue/catalogue.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { CompaniesModule } from './modules/companies/companies.module';
+import { EmployeesModule } from './modules/employees/employees.module';
+import { PricingModule } from './modules/pricing/pricing.module';
+import { MenuModule } from './modules/menu/menu.module';
+import { CalendarModule } from './modules/calendar/calendar.module';
 
 @Module({
   imports: [
@@ -26,6 +30,10 @@ import { CompaniesModule } from './modules/companies/companies.module';
     CatalogueModule,
     CategoriesModule,
     CompaniesModule,
+    EmployeesModule,
+    PricingModule,
+    MenuModule,
+    CalendarModule,
     PrismaModule,
     HealthModule,
   ],

@@ -6,7 +6,7 @@ export class CategoriesService {
   constructor(private readonly prisma: PrismaService) {}
   list() { return this.prisma.menuCategory.findMany({ orderBy: { displayOrder: 'asc' }, include: { dishes: { orderBy: { displayOrder: 'asc' }, include: { dish: true } } } }); }
   create(body: { name: string; displayOrder: number }) { return this.prisma.menuCategory.create({ data: { name: body.name.trim(), displayOrder: body.displayOrder } }); }
-  update(id: string, body: { name?: string; displayOrder?: number; isActive?: boolean }) { return this.prisma.menuCategory.update({ where: { id }, data: { ...(body.name === undefined ? {} : { name: body.name.trim() }), ...(body.displayOrder === undefined ? {} : { displayOrder: body.displayOrder }), ...(body.isActive === undefined ? {} : { isActive: body.isActive }) } }); }
+  update(id: string, body: { name?: string; displayOrder?: number; isActive?: boolean; secret?: boolean }) { return this.prisma.menuCategory.update({ where: { id }, data: { ...(body.name === undefined ? {} : { name: body.name.trim() }), ...(body.displayOrder === undefined ? {} : { displayOrder: body.displayOrder }), ...(body.isActive === undefined ? {} : { isActive: body.isActive }), ...(body.secret === undefined ? {} : { secret: body.secret }) } }); }
   async addDish(categoryId: string, body: { dishId: string; displayOrder: number }) {
     const category = await this.prisma.menuCategory.findUnique({ where: { id: categoryId } });
     if (!category) throw new NotFoundException('Category not found');
@@ -18,6 +18,16 @@ export class CategoriesService {
   }
   removeDish(categoryId: string, dishId: string) { return this.prisma.menuCategoryDish.delete({ where: { categoryId_dishId: { categoryId, dishId } } }); }
   setDishActive(categoryId: string, dishId: string, isActive: boolean) { return this.prisma.menuCategoryDish.update({ where: { categoryId_dishId: { categoryId, dishId } }, data: { isActive } }); }
+  setCategoryVisibility(categoryId: string, companyId: string, hidden: boolean) {
+    return hidden
+      ? this.prisma.companyHiddenCategory.upsert({ where: { companyId_categoryId: { companyId, categoryId } }, create: { companyId, categoryId }, update: {} })
+      : this.prisma.companyHiddenCategory.delete({ where: { companyId_categoryId: { companyId, categoryId } } });
+  }
+  setDishVisibility(dishId: string, companyId: string, hidden: boolean) {
+    return hidden
+      ? this.prisma.companyHiddenDish.upsert({ where: { companyId_dishId: { companyId, dishId } }, create: { companyId, dishId }, update: {} })
+      : this.prisma.companyHiddenDish.delete({ where: { companyId_dishId: { companyId, dishId } } });
+  }
   async reorder(ids: string[]) {
     const existing = await this.prisma.menuCategory.findMany({ select: { id: true } });
     this.assertSame(existing.map((item) => item.id), ids);
