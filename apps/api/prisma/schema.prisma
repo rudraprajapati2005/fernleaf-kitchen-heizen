@@ -6,3 +6,130 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum UserRole {
+  ADMIN
+  KITCHEN
+  DISPATCH
+  DRIVER
+}
+
+enum OrderStatus {
+  DRAFT
+  SUBMITTED
+  CONFIRMED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      UserRole
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Company {
+  id         String     @id @default(cuid())
+  name       String
+  externalId String?    @unique
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  employees  Employee[]
+  orders     Order[]
+
+  @@index([isActive])
+}
+
+model Employee {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  email     String?
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  orders    Order[]
+
+  @@index([companyId, isActive])
+  @@index([email])
+}
+
+model Dish {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  price       Decimal     @db.Decimal(12, 2)
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orderLines  OrderLine[]
+  options     Option[]
+
+  @@index([isActive])
+}
+
+model Option {
+  id              String      @id @default(cuid())
+  name            String
+  priceAdjustment Decimal     @db.Decimal(12, 2)
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  dishes          Dish[]
+  orderLines      OrderLine[]
+
+  @@index([isActive])
+}
+
+model Order {
+  id                   String      @id @default(cuid())
+  employeeId           String
+  companyId            String
+  status               OrderStatus @default(DRAFT)
+  employeeNameSnapshot String
+  companyNameSnapshot  String
+  deliveryDetails      Json?
+  serviceDate          DateTime
+  total                Decimal     @db.Decimal(12, 2)
+  placedAt             DateTime?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  employee             Employee    @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  company              Company     @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  lines                OrderLine[]
+
+  @@index([employeeId, createdAt])
+  @@index([companyId, createdAt])
+  @@index([status, serviceDate])
+  @@index([serviceDate])
+}
+
+model OrderLine {
+  id                      String   @id @default(cuid())
+  orderId                 String
+  dishId                  String
+  dishNameSnapshot        String
+  quantity                Int
+  unitPrice               Decimal  @db.Decimal(12, 2)
+  lineTotal               Decimal  @db.Decimal(12, 2)
+  selectedOptionsSnapshot Json?
+  notes                   String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  order                   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  dish                    Dish     @relation(fields: [dishId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  options                 Option[]
+
+  @@index([orderId])
+  @@index([dishId])
+}
