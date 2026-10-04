@@ -7,6 +7,12 @@ import type {
   CreateOptionDto,
   UpdateDishDto,
   UpdateOptionDto,
+  CreateOptionGroupDto,
+  UpdateOptionGroupDto,
+  ReorderDto,
+  CreatePortionSizeDto,
+  UpdateGroupPortionsDto,
+  UpdateGroupOptionPortionsDto,
 } from './dto/catalogue.dto';
 
 const dishInclude = { allergens: true, dietaryTags: true, kitchenStation: true } as const;
@@ -99,6 +105,124 @@ export class CatalogueService {
     return this.prisma.option.update({ where: { id }, data: { isActive }, include: optionInclude });
   }
 
+  listDishGroups(dishId: string) {
+    return this.prisma.optionGroup.findMany({
+      where: { dishId },
+      orderBy: { displayOrder: 'asc' },
+      include: { options: { orderBy: { displayOrder: 'asc' }, include: { option: true, portions: true } }, portions: { orderBy: { displayOrder: 'asc' }, include: { portionSize: true } } },
+    });
+  }
+
+  async createGroup(dishId: string, dto: CreateOptionGroupDto) {
+    await this.ensureDish(dishId);
+    this.assertUnique(dto.optionIds);
+    await this.ensureActiveOptions(dto.optionIds);
+    return this.prisma.optionGroup.create({
+      data: {
+        dishId, name: dto.name.trim(), isRequired: dto.isRequired, displayOrder: dto.displayOrder,
+        usesPortions: dto.usesPortions ?? false,
+        options: { create: dto.optionIds.map((optionId, index) => ({ optionId, displayOrder: index })) },
+      },
+      include: { options: { include: { option: true } } },
+    });
+  }
+
+  async updateGroup(id: string, dto: UpdateOptionGroupDto) {
+    const group = await this.ensureGroup(id);
+    this.assertUnique(dto.optionIds);
+    await this.ensureActiveOptions(dto.optionIds);
+    return this.prisma.$transaction(async (tx) => {
+      await tx.optionGroupOption.deleteMany({ where: { groupId: id } });
+      return tx.optionGroup.update({
+        where: { id },
+        data: {
+          name: dto.name.trim(), isRequired: dto.isRequired, displayOrder: dto.displayOrder,
+          usesPortions: dto.usesPortions ?? group.usesPortions,
+          options: { create: dto.optionIds.map((optionId, index) => ({ optionId, displayOrder: index })) },
+        },
+        include: { options: { include: { option: true } } },
+      });
+    });
+  }
+
+  async deleteGroup(id: string) {
+    await this.ensureGroup(id);
+    return this.prisma.optionGroup.delete({ where: { id } });
+  }
+
+  async reorderGroups(dishId: string, dto: ReorderDto) {
+    const groups = await this.prisma.optionGroup.findMany({ where: { dishId }, select: { id: true } });
+    this.assertSameIds(groups.map((group) => group.id), dto.ids);
+    return this.prisma.$transaction(async (tx) => {
+      await tx.optionGroup.updateMany({ where: { dishId }, data: { displayOrder: { increment: 100000 } } });
+      return Promise.all(dto.ids.map((id, index) => tx.optionGroup.update({ where: { id }, data: { displayOrder: index } })));
+    });
+  }
+
+  async reorderGroupOptions(groupId: string, dto: ReorderDto) {
+    const options = await this.prisma.optionGroupOption.findMany({ where: { groupId }, select: { id: true, optionId: true } });
+    this.assertSameIds(options.map((option) => option.optionId), dto.ids);
+    return this.prisma.$transaction(async (tx) => {
+      await tx.optionGroupOption.updateMany({ where: { groupId }, data: { displayOrder: { increment: 100000 } } });
+      return Promise.all(dto.ids.map((optionId, index) => tx.optionGroupOption.update({ where: { groupId_optionId: { groupId, optionId } }, data: { displayOrder: index } })));
+    });
+  }
+
+  createPortionSize(dto: CreatePortionSizeDto) {
+    return this.prisma.portionSize.create({ data: { name: dto.name.trim() } });
+  }
+
+  listPortionSizes(activeOnly = true) {
+    return this.prisma.portionSize.findMany({ where: activeOnly ? { isActive: true } : {}, orderBy: { name: 'asc' } });
+  }
+
+  setPortionSizeActive(id: string, isActive: boolean) {
+    return this.prisma.portionSize.update({ where: { id }, data: { isActive } });
+  }
+
+  async configureGroupPortions(groupId: string, dto: UpdateGroupPortionsDto) {
+    await this.ensureGroup(groupId);
+    if (dto.portionSizeIds.length !== dto.extraCharges.length) throw new BadRequestException('Each portion size requires one extra charge');
+    this.assertUnique(dto.portionSizeIds);
+    if (!dto.usesPortions && dto.portionSizeIds.length) throw new BadRequestException('A group without portions cannot have portion sizes');
+    const sizes = await this.prisma.portionSize.findMany({ where: { id: { in: dto.portionSizeIds }, isActive: true }, select: { id: true } });
+    this.assertSameIds(sizes.map((size) => size.id), dto.portionSizeIds);
+    return this.prisma.$transaction(async (tx) => {
+      await tx.optionGroupPortion.deleteMany({ where: { groupId } });
+      await tx.optionGroupOptionPortion.deleteMany({ where: { optionGroupOption: { groupId } } });
+      const updated = await tx.optionGroup.update({
+        where: { id: groupId },
+        data: {
+          usesPortions: dto.usesPortions,
+          portions: { create: dto.portionSizeIds.map((portionSizeId, index) => ({ portionSize: { connect: { id: portionSizeId } }, displayOrder: index, extraCharge: dto.extraCharges[index]! })) },
+        },
+        include: { portions: { include: { portionSize: true } } },
+      });
+      if (dto.usesPortions && dto.portionSizeIds.length) {
+        const links = await tx.optionGroupOption.findMany({ where: { groupId }, select: { id: true } });
+        const portions = await tx.optionGroupPortion.findMany({ where: { groupId }, select: { id: true } });
+        await tx.optionGroupOptionPortion.createMany({
+          data: links.flatMap((link) => portions.map((portion) => ({ optionGroupOptionId: link.id, optionGroupPortionId: portion.id }))),
+        });
+      }
+      return updated;
+    });
+  }
+
+  async configureGroupOptionPortions(groupOptionId: string, dto: UpdateGroupOptionPortionsDto) {
+    const link = await this.prisma.optionGroupOption.findUnique({ where: { id: groupOptionId }, include: { group: { include: { portions: true } } } });
+    if (!link) throw new NotFoundException('Group option not found');
+    if (!link.group.usesPortions) throw new BadRequestException('This group does not use portions');
+    this.assertUnique(dto.portionSizeIds);
+    const supported = link.group.portions.map((portion) => portion.portionSizeId);
+    this.assertSameIds(supported, dto.portionSizeIds);
+    return this.prisma.optionGroupOption.update({ where: { id: groupOptionId }, data: { portions: { create: dto.portionSizeIds.map((portionSizeId) => ({ optionGroupPortion: { connect: { groupId_portionSizeId: { groupId: link.groupId, portionSizeId } } } })) } }, include: { portions: true } });
+  }
+
+  calculatePortionCharge(extraCharge: string, optionCost: string): string {
+    return (Number(extraCharge) + Number(optionCost)).toFixed(2);
+  }
+
   validateOrderQuantity(minimumOrderQuantity: number | null, quantity: number): void {
     if (!Number.isInteger(quantity) || quantity < 1) throw new ConflictException('Quantity must be a positive integer');
     if (minimumOrderQuantity !== null && quantity < minimumOrderQuantity) {
@@ -159,6 +283,25 @@ export class CatalogueService {
     if (!(await this.prisma.option.findUnique({ where: { id }, select: { id: true } }))) {
       throw new NotFoundException('Option not found');
     }
+  }
+
+  private async ensureGroup(id: string) {
+      const group = await this.prisma.optionGroup.findUnique({ where: { id } });
+      if (!group) throw new NotFoundException('Option group not found');
+      return group;
+  }
+
+    private async ensureActiveOptions(ids: string[]) {
+      const options = await this.prisma.option.findMany({ where: { id: { in: ids }, isActive: true }, select: { id: true } });
+      this.assertSameIds(options.map((option) => option.id), ids);
+  }
+
+    private assertUnique(ids: string[]) {
+      if (new Set(ids).size !== ids.length) throw new ConflictException('Duplicate choices are not allowed');
+  }
+
+    private assertSameIds(expected: string[], actual: string[]) {
+      if (expected.length !== actual.length || expected.some((id) => !actual.includes(id))) throw new BadRequestException('The supplied choices do not belong to this group');
   }
 
   private throwDuplicateSku(error: unknown): void {

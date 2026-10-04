@@ -120,3 +120,57 @@ export class CreateOptionDto {
 }
 
 export class UpdateOptionDto extends CreateOptionDto {}
+
+export class CreateOptionGroupDto {
+  @IsString()
+  @MinLength(1)
+  name!: string;
+
+  @IsBoolean()
+  isRequired!: boolean;
+
+  @IsInt()
+  @Min(0)
+  displayOrder!: number;
+
+  @IsOptional()
+  @IsBoolean()
+  usesPortions?: boolean;
+
+  @IsArray()
+  @IsString({ each: true })
+  optionIds!: string[];
+}
+
+export class UpdateOptionGroupDto extends CreateOptionGroupDto {}
+
+export class ReorderDto {
+  @IsArray()
+  @IsString({ each: true })
+  ids!: string[];
+}
+
+export class CreatePortionSizeDto {
+  @IsString()
+  @MinLength(1)
+  name!: string;
+}
+
+export class UpdateGroupPortionsDto {
+  @IsBoolean()
+  usesPortions!: boolean;
+
+  @IsArray()
+  @IsString({ each: true })
+  portionSizeIds!: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  extraCharges!: string[];
+}
+
+export class UpdateGroupOptionPortionsDto {
+  @IsArray()
+  @IsString({ each: true })
+  portionSizeIds!: string[];
+}

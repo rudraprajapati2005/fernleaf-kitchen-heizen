@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Delete, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard';
 import { CapabilityGuard } from '../authorization/capability.guard';
 import { RequireCapabilities } from '../authorization/require-capabilities.decorator';
@@ -9,6 +9,12 @@ import {
   CreateOptionDto,
   UpdateDishDto,
   UpdateOptionDto,
+  CreateOptionGroupDto,
+  UpdateOptionGroupDto,
+  ReorderDto,
+  CreatePortionSizeDto,
+  UpdateGroupPortionsDto,
+  UpdateGroupOptionPortionsDto,
 } from './dto/catalogue.dto';
 
 @Controller('catalogue')
@@ -65,4 +71,48 @@ export class CatalogueController {
   setOptionStatus(@Param('id') id: string, @Body('isActive') isActive: boolean) {
     return this.catalogue.setOptionActive(id, isActive);
   }
+
+  @Get('dishes/:dishId/option-groups')
+  @RequireCapabilities('catalogue.read')
+  listGroups(@Param('dishId') dishId: string) { return this.catalogue.listDishGroups(dishId); }
+
+  @Post('dishes/:dishId/option-groups')
+  @RequireCapabilities('catalogue.manage')
+  createGroup(@Param('dishId') dishId: string, @Body() dto: CreateOptionGroupDto) { return this.catalogue.createGroup(dishId, dto); }
+
+  @Patch('option-groups/:id')
+  @RequireCapabilities('catalogue.manage')
+  updateGroup(@Param('id') id: string, @Body() dto: UpdateOptionGroupDto) { return this.catalogue.updateGroup(id, dto); }
+
+  @Delete('option-groups/:id')
+  @RequireCapabilities('catalogue.manage')
+  deleteGroup(@Param('id') id: string) { return this.catalogue.deleteGroup(id); }
+
+  @Patch('dishes/:dishId/option-groups/order')
+  @RequireCapabilities('catalogue.manage')
+  reorderGroups(@Param('dishId') dishId: string, @Body() dto: ReorderDto) { return this.catalogue.reorderGroups(dishId, dto); }
+
+  @Patch('option-groups/:groupId/options/order')
+  @RequireCapabilities('catalogue.manage')
+  reorderOptions(@Param('groupId') groupId: string, @Body() dto: ReorderDto) { return this.catalogue.reorderGroupOptions(groupId, dto); }
+
+  @Get('portion-sizes')
+  @RequireCapabilities('catalogue.read')
+  listPortionSizes(@Query('activeOnly') activeOnly?: string) { return this.catalogue.listPortionSizes(activeOnly !== 'false'); }
+
+  @Post('portion-sizes')
+  @RequireCapabilities('catalogue.manage')
+  createPortionSize(@Body() dto: CreatePortionSizeDto) { return this.catalogue.createPortionSize(dto); }
+
+  @Patch('portion-sizes/:id/status')
+  @RequireCapabilities('catalogue.manage')
+  setPortionSizeStatus(@Param('id') id: string, @Body('isActive') isActive: boolean) { return this.catalogue.setPortionSizeActive(id, isActive); }
+
+  @Patch('option-groups/:groupId/portions')
+  @RequireCapabilities('catalogue.manage')
+  configureGroupPortions(@Param('groupId') groupId: string, @Body() dto: UpdateGroupPortionsDto) { return this.catalogue.configureGroupPortions(groupId, dto); }
+
+  @Patch('group-options/:id/portions')
+  @RequireCapabilities('catalogue.manage')
+  configureGroupOptionPortions(@Param('id') id: string, @Body() dto: UpdateGroupOptionPortionsDto) { return this.catalogue.configureGroupOptionPortions(id, dto); }
 }
