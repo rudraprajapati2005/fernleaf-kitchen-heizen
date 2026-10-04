@@ -17,7 +17,7 @@ export function AppShell() {
   return (
     <main className="dashboard">
       <aside className="sidebar">
-        <p className="eyebrow">Fearleaf</p>
+        <p className="eyebrow">Fernleaf</p>
         <h2>Kitchen ops</h2>
         <nav>
           <span className="nav-active">Overview</span>

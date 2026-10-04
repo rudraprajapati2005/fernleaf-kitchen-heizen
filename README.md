@@ -1,4 +1,4 @@
-# Fearleaf Kitchen
+# Fernleaf Kitchen
 
 Production-ready monorepo foundation for a kitchen operations admin panel.
 

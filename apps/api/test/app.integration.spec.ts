@@ -118,7 +118,7 @@ describe('API infrastructure', () => {
       },
     });
     expect(response.headers['set-cookie']).toBeDefined();
-    expect(response.headers['set-cookie']?.[0]).toContain('fearleaf_access_token=');
+    expect(response.headers['set-cookie']?.[0]).toContain('fernleaf_access_token=');
   });
 
   it('rejects invalid credentials', async () => {
@@ -150,7 +150,7 @@ describe('API infrastructure', () => {
   it('rejects invalid and expired tokens', async () => {
     await request(app.getHttpServer())
       .get('/api/auth/me')
-      .set('Cookie', 'fearleaf_access_token=not-a-token')
+      .set('Cookie', 'fernleaf_access_token=not-a-token')
       .expect(401);
 
     const expiredToken = jwt.sign(
@@ -160,7 +160,7 @@ describe('API infrastructure', () => {
     );
     await request(app.getHttpServer())
       .get('/api/auth/me')
-      .set('Cookie', `fearleaf_access_token=${expiredToken}`)
+      .set('Cookie', `fernleaf_access_token=${expiredToken}`)
       .expect(401);
   });
 
@@ -172,7 +172,7 @@ describe('API infrastructure', () => {
     );
     const response = await request(app.getHttpServer())
       .get('/api/authorization/me')
-      .set('Cookie', `fearleaf_access_token=${token}`)
+      .set('Cookie', `fernleaf_access_token=${token}`)
       .expect(200);
 
     expect(response.body.capabilities).toEqual(
@@ -199,7 +199,7 @@ describe('API infrastructure', () => {
       );
       const response = await request(app.getHttpServer())
         .get('/api/authorization/admin-settings')
-        .set('Cookie', `fearleaf_access_token=${token}`)
+        .set('Cookie', `fernleaf_access_token=${token}`)
         .expect(403);
       expect(response.body.error.code).toBe('FORBIDDEN');
     }
@@ -213,7 +213,7 @@ describe('API infrastructure', () => {
     );
     const response = await request(app.getHttpServer())
       .get('/api/authorization/driver-deliveries/driver_2')
-      .set('Cookie', `fearleaf_access_token=${token}`)
+      .set('Cookie', `fernleaf_access_token=${token}`)
       .expect(403);
     expect(response.body.error.code).toBe('FORBIDDEN');
   });

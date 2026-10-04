@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { join } from 'node:path';
 import { HealthModule } from './modules/health/health.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { validateEnvironment } from './config/environment';
@@ -20,7 +21,12 @@ import { CalendarModule } from './modules/calendar/calendar.module';
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: [
+        join(__dirname, '../.env.local'),
+        join(__dirname, '../.env'),
+        '.env.local',
+        '.env',
+      ],
       validate: validateEnvironment,
     }),
     AuthModule,

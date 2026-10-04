@@ -30,7 +30,7 @@ export function LoginForm() {
   return (
     <main className="login-page">
       <div className="login-panel">
-        <p className="eyebrow">Fearleaf Kitchen</p>
+        <p className="eyebrow">Fernleaf Kitchen</p>
         <h1>Welcome back.</h1>
         <p className="muted">Sign in to coordinate every service with confidence.</p>
         <form className="login-form" onSubmit={handleSubmit}>
