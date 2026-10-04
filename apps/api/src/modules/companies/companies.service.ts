@@ -1,5 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { UserRole } from '@prisma/client';
+import type { UpdateDeliveryConfigDto } from './dto/delivery-config.dto';
 
 const PUBLIC_DOMAINS = new Set(['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com', 'aol.com']);
 type AddressInput = { label: string; addressLine1: string; addressLine2?: string; city: string; state?: string; postalCode: string; country?: string; isActive?: boolean };
@@ -7,8 +9,9 @@ type AddressInput = { label: string; addressLine1: string; addressLine2?: string
 @Injectable()
 export class CompaniesService {
   constructor(private readonly prisma: PrismaService) {}
-  list() { return this.prisma.company.findMany({ include: { emailDomains: true, deliveryAddresses: true, ownerEmployee: true }, orderBy: { name: 'asc' } }); }
-  get(id: string) { return this.prisma.company.findUniqueOrThrow({ where: { id }, include: { employees: true, emailDomains: true, deliveryAddresses: true, ownerEmployee: true } }); }
+  list() { return this.prisma.company.findMany({ include: { emailDomains: true, deliveryAddresses: true, ownerEmployee: true, defaultDriver: true, defaultDeliveryAddress: true }, orderBy: { name: 'asc' } }); }
+  get(id: string) { return this.prisma.company.findUniqueOrThrow({ where: { id }, include: { employees: true, emailDomains: true, deliveryAddresses: true, ownerEmployee: true, defaultDriver: true, defaultDeliveryAddress: true } }); }
+  getDeliveryConfig(id: string) { return this.prisma.company.findUniqueOrThrow({ where: { id }, select: { id: true, defaultDeliveryTime: true, kitchenDepartureLeadMinutes: true, defaultPackaging: true, driverInstructions: true, defaultDriver: { select: { id: true, name: true, email: true, role: true } }, defaultDeliveryAddress: true } }); }
   async create(body: { name: string; billingContactName?: string; billingContactEmail?: string; billingContactPhone?: string; ownerEmployeeId?: string }) {
     const companyData = {
       name: body.name,
@@ -39,6 +42,39 @@ export class CompaniesService {
     const address = await this.prisma.companyDeliveryAddress.findFirst({ where: { id, companyId, isActive: true } });
     if (!address) throw new BadRequestException('An active address from this company is required');
     return { label: address.label, addressLine1: address.addressLine1, addressLine2: address.addressLine2, city: address.city, state: address.state, postalCode: address.postalCode, country: address.country };
+  }
+  async updateDeliveryConfig(companyId: string, dto: UpdateDeliveryConfigDto) {
+    await this.ensureCompanyForDelivery(companyId);
+    if (dto.defaultDeliveryTime !== undefined && !/^([01]\d|2[0-3]):[0-5]\d$/.test(dto.defaultDeliveryTime)) {
+      throw new BadRequestException('Default delivery time must use HH:mm');
+    }
+    if (dto.kitchenDepartureLeadMinutes !== undefined && (!Number.isInteger(dto.kitchenDepartureLeadMinutes) || dto.kitchenDepartureLeadMinutes < 1 || dto.kitchenDepartureLeadMinutes > 1440)) {
+      throw new BadRequestException('Kitchen departure lead time must be between 1 and 1440 minutes');
+    }
+    if (dto.defaultDriverId !== undefined) {
+      const driver = await this.prisma.user.findFirst({ where: { id: dto.defaultDriverId, role: UserRole.DRIVER, isActive: true }, select: { id: true } });
+      if (!driver) throw new BadRequestException('Default driver must be an active DRIVER staff account');
+    }
+    if (dto.defaultDeliveryAddressId !== undefined) {
+      const address = await this.prisma.companyDeliveryAddress.findFirst({ where: { id: dto.defaultDeliveryAddressId, companyId, isActive: true }, select: { id: true } });
+      if (!address) throw new BadRequestException('Default delivery address must be an active address for this company');
+    }
+    return this.prisma.company.update({
+      where: { id: companyId },
+      data: {
+        ...(dto.defaultDeliveryTime === undefined ? {} : { defaultDeliveryTime: dto.defaultDeliveryTime }),
+        ...(dto.kitchenDepartureLeadMinutes === undefined ? {} : { kitchenDepartureLeadMinutes: dto.kitchenDepartureLeadMinutes }),
+        ...(dto.defaultPackaging === undefined ? {} : { defaultPackaging: dto.defaultPackaging }),
+        ...(dto.driverInstructions === undefined ? {} : { driverInstructions: dto.driverInstructions.trim() || null }),
+        ...(dto.defaultDriverId === undefined ? {} : { defaultDriver: { connect: { id: dto.defaultDriverId } } }),
+        ...(dto.defaultDeliveryAddressId === undefined ? {} : { defaultDeliveryAddress: { connect: { id: dto.defaultDeliveryAddressId } } }),
+      },
+      select: { id: true, defaultDeliveryTime: true, kitchenDepartureLeadMinutes: true, defaultPackaging: true, driverInstructions: true, defaultDriver: { select: { id: true, name: true, email: true, role: true } }, defaultDeliveryAddress: true },
+    });
+  }
+  private async ensureCompanyForDelivery(id: string) {
+    const company = await this.prisma.company.findUnique({ where: { id }, select: { id: true } });
+    if (!company) throw new NotFoundException('Company not found');
   }
   private async validateOwner(employeeId?: string, companyId?: string) { if (!employeeId) return; const employee = await this.prisma.employee.findUnique({ where: { id: employeeId }, select: { companyId: true } }); if (!employee || (companyId && employee.companyId !== companyId)) throw new BadRequestException('Company owner must belong to the company'); }
 }

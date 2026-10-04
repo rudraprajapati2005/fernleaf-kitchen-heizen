@@ -103,15 +103,22 @@ enum DishTemperature {
   COLD
 }
 
+enum PackagingType {
+  STANDARD
+  INSULATED
+  RECYCLABLE
+}
+
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  passwordHash String
-  role         UserRole
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  name                String
+  passwordHash        String
+  role                UserRole
+  isActive            Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  defaultForCompanies Company[] @relation("CompanyDefaultDriver")
 }
 
 model Allergen {
@@ -152,27 +159,35 @@ model KitchenStation {
 }
 
 model Company {
-  id                  String                   @id @default(cuid())
-  name                String
-  externalId          String?                  @unique
-  billingContactName  String?
-  billingContactEmail String?
-  billingContactPhone String?
-  ownerEmployeeId     String?
-  isActive            Boolean                  @default(true)
-  createdAt           DateTime                 @default(now())
-  updatedAt           DateTime                 @updatedAt
-  employees           Employee[]
-  ownerEmployee       Employee?                @relation("CompanyOwner", fields: [ownerEmployeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  emailDomains        CompanyEmailDomain[]
-  deliveryAddresses   CompanyDeliveryAddress[]
-  orders              Order[]
-  priceTierId         String?
-  priceTier           PriceTier?               @relation(fields: [priceTierId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  workingDays         Json                     @default("[1,2,3,4,5]")
-  holidays            CompanyHoliday[]
-  hiddenCategories    CompanyHiddenCategory[]
-  hiddenDishes        CompanyHiddenDish[]
+  id                          String                   @id @default(cuid())
+  name                        String
+  externalId                  String?                  @unique
+  billingContactName          String?
+  billingContactEmail         String?
+  billingContactPhone         String?
+  ownerEmployeeId             String?
+  defaultDeliveryTime         String?                  @db.VarChar(5)
+  kitchenDepartureLeadMinutes Int                      @default(60)
+  defaultPackaging            PackagingType            @default(STANDARD)
+  driverInstructions          String?
+  defaultDriverId             String?
+  defaultDeliveryAddressId    String?
+  isActive                    Boolean                  @default(true)
+  createdAt                   DateTime                 @default(now())
+  updatedAt                   DateTime                 @updatedAt
+  employees                   Employee[]
+  ownerEmployee               Employee?                @relation("CompanyOwner", fields: [ownerEmployeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  defaultDriver               User?                    @relation("CompanyDefaultDriver", fields: [defaultDriverId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  emailDomains                CompanyEmailDomain[]
+  deliveryAddresses           CompanyDeliveryAddress[]
+  orders                      Order[]
+  priceTierId                 String?
+  priceTier                   PriceTier?               @relation(fields: [priceTierId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  workingDays                 Json                     @default("[1,2,3,4,5]")
+  holidays                    CompanyHoliday[]
+  hiddenCategories            CompanyHiddenCategory[]
+  hiddenDishes                CompanyHiddenDish[]
+  defaultDeliveryAddress      CompanyDeliveryAddress?  @relation("CompanyDefaultDeliveryAddress", fields: [defaultDeliveryAddressId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([isActive])
 }
@@ -264,20 +279,21 @@ model CompanyEmailDomain {
 }
 
 model CompanyDeliveryAddress {
-  id           String   @id @default(cuid())
-  companyId    String
-  label        String
-  addressLine1 String
-  addressLine2 String?
-  city         String
-  state        String?
-  postalCode   String
-  country      String   @default("US")
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  orders       Order[]
+  id                  String    @id @default(cuid())
+  companyId           String
+  label               String
+  addressLine1        String
+  addressLine2        String?
+  city                String
+  state               String?
+  postalCode          String
+  country             String    @default("US")
+  isActive            Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  company             Company   @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  orders              Order[]
+  defaultForCompanies Company[] @relation("CompanyDefaultDeliveryAddress")
 
   @@index([companyId, isActive])
 }
