@@ -16,7 +16,9 @@ describe('CatalogueService reference associations', () => {
 
     await service.createDish({
       name: 'Curry',
-      price: '12.50',
+      sku: 'CURRY-001',
+      temperature: 'HOT',
+      costPrice: '12.50',
       kitchenStationId: 'station_1',
       allergenIds: ['allergen_1'],
       dietaryTagIds: ['tag_1'],
@@ -41,7 +43,7 @@ describe('CatalogueService reference associations', () => {
     await expect(
       service.createOption({
         name: 'Extra sauce',
-        priceAdjustment: '1.50',
+        cost: '1.50',
         allergenIds: ['inactive'],
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
