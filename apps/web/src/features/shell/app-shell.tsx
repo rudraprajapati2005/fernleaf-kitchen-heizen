@@ -2,6 +2,8 @@
 
 import { useAuth } from '../auth/auth-provider';
 import { CapabilityGate } from '../auth/capability-gate';
+import { StaffManagement } from '../admin/staff-management';
+import { ReferenceDataManagement } from '../admin/reference-data-management';
 
 export function AppShell() {
   const { user, logout, can } = useAuth();
@@ -34,6 +36,8 @@ export function AppShell() {
             <p className="muted">Your workspace is ready for the next service.</p>
           </section>
         </CapabilityGate>
+        <StaffManagement />
+        <ReferenceDataManagement />
       </section>
     </main>
   );

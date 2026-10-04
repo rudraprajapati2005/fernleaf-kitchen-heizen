@@ -186,6 +186,97 @@ body {
   box-shadow: 0 1.5rem 4rem rgb(20 33 38 / 8%);
 }
 
+.management-card {
+  margin-top: 2rem;
+  padding: 2rem;
+  border: 1px solid #dbe3e5;
+  border-radius: 1rem;
+  background: white;
+}
+
+.management-heading,
+.data-row,
+.inline-form,
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.management-heading {
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.management-card h2,
+.management-card h3 {
+  margin: 0.5rem 0 1rem;
+}
+
+.filters input,
+.filters select,
+.inline-form input,
+.inline-form select,
+.inline-form button,
+.data-row button {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #cbd8db;
+  border-radius: 0.45rem;
+  background: white;
+  font: inherit;
+}
+
+.inline-form button,
+.data-row button {
+  cursor: pointer;
+  background: #13795b;
+  color: white;
+  border-color: #13795b;
+}
+
+.data-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.data-row {
+  justify-content: space-between;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid #edf1f2;
+}
+
+.data-row div {
+  display: grid;
+  gap: 0.2rem;
+  margin-right: auto;
+}
+
+.data-row span {
+  color: #586b71;
+  font-size: 0.85rem;
+}
+
+.form-success {
+  color: #13795b;
+}
+
+.reference-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.reference-column {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .reference-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .welcome-card h2 {
   margin: 0.75rem 0 0;
   font-size: clamp(2rem, 5vw, 4rem);

@@ -5,6 +5,9 @@ import { PrismaModule } from './modules/prisma/prisma.module';
 import { validateEnvironment } from './config/environment';
 import { AuthModule } from './modules/auth/auth.module';
 import { AuthorizationModule } from './modules/authorization/authorization.module';
+import { StaffModule } from './modules/staff/staff.module';
+import { ReferenceDataModule } from './modules/reference-data/reference-data.module';
+import { CatalogueModule } from './modules/catalogue/catalogue.module';
 
 @Module({
   imports: [
@@ -16,6 +19,9 @@ import { AuthorizationModule } from './modules/authorization/authorization.modul
     }),
     AuthModule,
     AuthorizationModule,
+    StaffModule,
+    ReferenceDataModule,
+    CatalogueModule,
     PrismaModule,
     HealthModule,
   ],

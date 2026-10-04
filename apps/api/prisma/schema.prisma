@@ -36,6 +36,41 @@ model User {
   updatedAt    DateTime @updatedAt
 }
 
+model Allergen {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  dishes    Dish[]
+  options   Option[]
+
+  @@index([isActive, name])
+}
+
+model DietaryTag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  dishes    Dish[]
+  options   Option[]
+
+  @@index([isActive, name])
+}
+
+model KitchenStation {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  dishes    Dish[]
+
+  @@index([isActive, name])
+}
+
 model Company {
   id         String     @id @default(cuid())
   name       String
@@ -66,28 +101,34 @@ model Employee {
 }
 
 model Dish {
-  id          String      @id @default(cuid())
-  name        String
-  description String?
-  price       Decimal     @db.Decimal(12, 2)
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  orderLines  OrderLine[]
-  options     Option[]
+  id               String          @id @default(cuid())
+  name             String
+  description      String?
+  price            Decimal         @db.Decimal(12, 2)
+  isActive         Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  orderLines       OrderLine[]
+  options          Option[]
+  allergens        Allergen[]
+  dietaryTags      DietaryTag[]
+  kitchenStation   KitchenStation? @relation(fields: [kitchenStationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  kitchenStationId String?
 
   @@index([isActive])
 }
 
 model Option {
-  id              String      @id @default(cuid())
+  id              String       @id @default(cuid())
   name            String
-  priceAdjustment Decimal     @db.Decimal(12, 2)
-  isActive        Boolean     @default(true)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  priceAdjustment Decimal      @db.Decimal(12, 2)
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
   dishes          Dish[]
   orderLines      OrderLine[]
+  allergens       Allergen[]
+  dietaryTags     DietaryTag[]
 
   @@index([isActive])
 }

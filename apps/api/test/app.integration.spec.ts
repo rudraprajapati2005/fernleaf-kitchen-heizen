@@ -133,6 +133,16 @@ describe('API infrastructure', () => {
     });
   });
 
+  it('does not authenticate an inactive staff account', async () => {
+    const original = user.isActive;
+    user.isActive = false;
+    await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ email: user.email, password: 'correct-password' })
+      .expect(401);
+    user.isActive = original;
+  });
+
   it('rejects protected routes without authentication', async () => {
     await request(app.getHttpServer()).get('/api/auth/me').expect(401);
   });
